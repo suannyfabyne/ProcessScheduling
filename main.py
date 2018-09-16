@@ -1,4 +1,5 @@
 import numpy as np
+import time
 
 def menorValor(array):
     countfor = 0
@@ -16,7 +17,9 @@ def FCFS(arrive, peaktime, nprocesses):
     counterwhile = 0
     duracao = 0
     copy = np.copy(arrive)
-    while(nprocesses > 0):
+    npro=nprocesses
+    copy = copy-copy[0]
+    while(npro > 0):
         index, timearrive = menorValor(copy)
         copy[index] = 100
         duracao = duracao + peaktime[index]
@@ -24,10 +27,13 @@ def FCFS(arrive, peaktime, nprocesses):
         CPU[counterwhile,1] = peaktime[index]
         CPU[counterwhile,0] = index+1  
         counterwhile+=1
-        nprocesses-=1
+        npro-=1
     counter = 0
+    RET = ReturnTimeNP(CPU,nprocesses,arrive)
+    RESP = ResponseTimeNP(CPU,nprocesses,arrive)
     print("FCFS")
     print(CPU)
+    return RET, RESP
 
 def order(copypeaktime, copyarrive, nprocesses):
     counter = 0
@@ -67,11 +73,68 @@ def SJF(arrive, peaktime, nprocesses):
         orderpeaktime[index]= -1
         counterwhile+=1
         counter = 1
+    RET = ReturnTimeNP(CPUsjf,nprocesses,orderarrive)
+    REST = ResponseTimeNP(CPUsjf,nprocesses,orderarrive)
     print("SJF")
     print(CPUsjf)
+    return RET, REST
 
-nprocesses = 0
-counter = 0
+def RR(arrive, peaktime, nprocesses): 
+    copypeaktime = np.copy(peaktime)    
+    copyarrive = np.copy(arrive) 
+    orderpeaktime, orderarrive = order(copypeaktime, copyarrive, nprocesses)
+    counter = 1
+    quantum = 2
+    lista = []
+    timer = tamanho = index = peaktimevalue = counterwhile = duracao = 0
+    soma = orderpeaktime.sum()
+    orderarrive = orderarrive-orderarrive[0]
+
+    while(timer < soma):
+        for i in orderarrive:
+            if (i <= timer): 
+                tamanho = counter             
+            counter+=1    
+        lista = np.copy(orderarrive[:tamanho])
+        index, peaktimevalue = menorValor(lista)
+
+        if (orderpeaktime[index] < quantum):
+            CPUrr[counterwhile,1] = orderpeaktime[index]
+            duracao = duracao + orderpeaktime[index]
+            timer = orderpeaktime[index] + timer
+            orderpeaktime[index] = 0
+            orderarrive[index]= -1
+        else:  
+            duracao = duracao + quantum
+            orderpeaktime[index] = orderpeaktime[index] - quantum
+            CPUrr[counterwhile,1] = quantum
+            timer = quantum + timer
+            if(orderpeaktime[index] == 0): orderarrive[index]= -1
+            else: orderarrive[index] = duracao
+
+        CPUrr[counterwhile,0] = index+1 
+        CPUrr[counterwhile,2] = duracao
+        counterwhile+=1
+    print("RR")
+    print(CPUrr[:counterwhile])
+
+def ReturnTimeNP(CPU,nprocesses,arrive):
+    RET = 0
+    for x,y,z in CPU:
+        RET+=z
+    for i in arrive:
+        RET-=i
+    return RET/nprocesses
+
+def ResponseTimeNP(CPU,nprocesses,arrive):
+    RESP = 0
+    for x,y,z in CPU[:nprocesses-1]:
+        RESP+=z
+    for i in arrive:
+        RESP-=i
+    return RESP/nprocesses
+
+nprocesses = counter = 0
 txtfile = open('entry.txt', 'r')
 txt = txtfile.readlines()
 
@@ -80,9 +143,9 @@ for line in txt :
 
 arrive = np.zeros(nprocesses)
 peaktime = np.zeros(nprocesses)
-CPU = np.zeros([nprocesses,3])
-CPUsjf = np.zeros([nprocesses,3])
-
+CPU =  np.zeros([nprocesses,3])
+CPUsjf =  np.zeros([nprocesses,3])
+CPUrr = np.zeros([1000,3])
 for line in txt :
     value = line.split()
     arrive[counter] = value[0]
@@ -90,5 +153,9 @@ for line in txt :
     counter+=1
 txtfile.close()
 
-FCFS(arrive, peaktime, nprocesses)
-SJF(arrive, peaktime, nprocesses)
+RET_FCFS, RESP_FCFS = FCFS(arrive, peaktime, nprocesses)
+RET_SJF, RESP_SJF = SJF(arrive, peaktime, nprocesses)
+RR(arrive, peaktime, nprocesses)
+
+print("FSFS " + str(RET_FCFS) + " " + str(RESP_FCFS) + " " + str(RESP_FCFS))
+print("SJF " + str(RET_SJF) + " " + str(RESP_SJF) + " " + str(RESP_SJF)) 
