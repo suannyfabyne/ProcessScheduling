@@ -1,3 +1,6 @@
+#SUANNY FABYNE DA SILVA VIEIRA
+#DISCIPLINA DE SISTEMAS OPERACIONAIS
+
 import numpy as np
 import time
 
@@ -13,24 +16,31 @@ def menorValor(array):
             index = countfor
         countfor+=1
     return index, counter
-           
+
+def menorValorPrioridade(array,prioridade):
+    countfor = 0
+    index = 0
+    counter = AUX
+    for i in array:
+        if (i+prioridade[countfor] < counter and i != -1):
+            counter = i+prioridade[countfor]
+            index = countfor
+        countfor+=1
+    return index, counter
+
 def FCFS(arrive, peaktime, nprocesses):
     copypeaktime = np.copy(peaktime)    
     copyarrive = np.copy(arrive) 
     orderpeaktime, orderarrive = order(copypeaktime, copyarrive, nprocesses)
 
-    print("orderarrive " + str(orderarrive))
-    print("orderpt " + str(orderpeaktime))
-
     counter = 1
     lista = []
     timer = tamanho = index = peaktimevalue = counterwhile = duracao = 0
-    soma = orderpeaktime.sum()
     orderarrive = orderarrive-orderarrive[0]
     arrives = np.copy(orderarrive)
-    if (orderpeaktime.sum() < orderarrive.max()): soma = orderarrive.max()+1
 
-    while(timer < soma):
+    incrementowhile=0
+    while(incrementowhile < nprocesses):
         for i in orderarrive:
             if (i <= timer): 
                 tamanho = counter             
@@ -50,14 +60,13 @@ def FCFS(arrive, peaktime, nprocesses):
             CPU[counterwhile,0] = index+1  
             counterwhile+=1   
             timer = timer + orderpeaktime[index]     
+            incrementowhile+=1
 
         counter = 1    
 
     counter = 0
     RET = ReturnTimeT(CPU,nprocesses,arrives)
     RESP = ResponseTimeT(CPU,nprocesses,arrives)
-    print("FCFS")
-    print(CPU)
     return RET, RESP
 
 def order(copypeaktime, copyarrive, nprocesses):
@@ -80,12 +89,11 @@ def SJF(arrive, peaktime, nprocesses):
     counter = 1
     lista = []
     timer = tamanho = index = peaktimevalue = counterwhile = duracao = 0
-    soma = orderpeaktime.sum()
     orderarrive = orderarrive-orderarrive[0]
     arrives = np.copy(orderarrive)
-    if (orderpeaktime.sum() < orderarrive.max()): soma = orderarrive.max()+1
 
-    while(timer < soma):
+    incrementowhile = 0
+    while(incrementowhile < nprocesses):
         for i in orderarrive:
             if (i <= timer): 
                 tamanho = counter             
@@ -105,36 +113,41 @@ def SJF(arrive, peaktime, nprocesses):
             CPUsjf[counterwhile,2] = duracao
             orderpeaktime[index]= -1
             counterwhile+=1
+            incrementowhile+=1
         counter = 1
 
     RET = ReturnTimeT(CPUsjf,nprocesses,arrives)
     REST = ResponseTimeT(CPUsjf,nprocesses,arrives)
-    print("SJF")
-    print(CPUsjf)
     return RET, REST
 
 def RR(arrive, peaktime, nprocesses): 
     copypeaktime = np.copy(peaktime)    
     copyarrive = np.copy(arrive) 
+    prioridade = np.zeros(nprocesses)
     orderpeaktime, orderarrive = order(copypeaktime, copyarrive, nprocesses)
     counter = 1
     quantum = 2
     lista = []
     timer = tamanho = index = peaktimevalue = counterwhile = duracao = 0
-    soma = orderpeaktime.sum()
     orderarrive = orderarrive-orderarrive[0]
     arrives = np.copy(orderarrive)
+    peaktimes = np.copy(peaktime)
+    contfim = 1
 
-    if (orderpeaktime.sum() < orderarrive.max()): soma = orderarrive.max()+1
-    while(timer < soma):
+    while(contfim):
         for i in orderarrive:
             if (i <= timer): 
                 tamanho = counter           
-            counter+=1    
+            counter+=1           
         lista = np.copy(orderarrive[:tamanho])
-        index, peaktimevalue = menorValor(lista)
+
+        index, peaktimevalue = menorValorPrioridade(lista,prioridade)
+
+
         if (peaktimevalue == AUX):
             timer = timer + 1
+            duracao = duracao + 1
+
         else:
             if (orderpeaktime[index] < quantum):
                 CPUrr[counterwhile,3] = duracao
@@ -149,18 +162,24 @@ def RR(arrive, peaktime, nprocesses):
                 orderpeaktime[index] = orderpeaktime[index] - quantum
                 CPUrr[counterwhile,1] = quantum
                 timer = quantum + timer
+                prioridade[index] = 1
                 if(orderpeaktime[index] == 0): orderarrive[index]= -1
                 else: orderarrive[index] = duracao
+
 
             CPUrr[counterwhile,0] = index+1 
             CPUrr[counterwhile,2] = duracao
             counterwhile+=1
         counter = 1
-    print("RR")
-    print(CPUrr[:counterwhile])
-    #RET = ReturnTimeRR(CPUrr,nprocesses,orderarrive)
+        contfim = 0
+        for i in orderpeaktime:
+            if (i > 0):
+                contfim+=1
+
     RESP = ResponseTimeRR(CPUrr,nprocesses,arrives)
     RET = ReturnTimeRR(CPUrr,nprocesses,arrives)
+    WAIT = WaitTimeRR(CPUrr,nprocesses,arrives,peaktimes)
+    return RET, RESP, WAIT
 
 def ReturnTimeT(CPU,nprocesses,arrive):
     RET = 0
@@ -210,8 +229,24 @@ def ReturnTimeRR(CPU,nprocesses,arrive):
 
     for i in arrive:
         arrives = arrives + i
-    print(((RET-arrives)/nprocesses))
     return ((RET-arrives)/nprocesses)
+
+def WaitTimeRR(CPU,nprocesses,arrive, peaktime):
+    WAIT = 0
+    arrives = 0
+    count = 0
+    np = nprocesses   
+    while(np > 0):
+        for x,y,z,w in CPU:
+            if (np == x):
+                count = z
+        WAIT+=count
+        np-=1
+
+    for i in arrive:
+        arrives = arrives + i
+    peaktime = peaktime.sum()
+    return ((WAIT-arrives-peaktime)/nprocesses)
 
 nprocesses = counter = 0
 txtfile = open('entry.txt', 'r')
@@ -236,7 +271,11 @@ txtfile.close()
 
 RET_FCFS, RESP_FCFS = FCFS(arrive, peaktime, nprocesses)
 RET_SJF, RESP_SJF = SJF(arrive, peaktime, nprocesses)
-RR(arrive, peaktime, nprocesses)
+RET_RR, RESP_RR, WAIT_RR = RR(arrive, peaktime, nprocesses)
 
-print("FSFS " + str(RET_FCFS) + " " + str(RESP_FCFS) + " " + str(RESP_FCFS))
-print("SJF " + str(RET_SJF) + " " + str(RESP_SJF) + " " + str(RESP_SJF)) 
+
+
+
+print("FCFS ", round(RET_FCFS,1), round(RESP_FCFS,1), round(RESP_FCFS,1))
+print("SJF ",round(RET_SJF,1), round(RESP_SJF,1), round(RESP_SJF,1)) 
+print("RR ",round(RET_RR,1), round(RESP_RR,1), round(WAIT_RR,1)) 
